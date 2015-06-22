@@ -120,7 +120,8 @@
 
 
 // ---------------- Timing Configuration Values ------------- //
-#define ARC_FLT_WINDOW	        1000        // 3 arcs within defined time will assert an arc fault
+#define ARC_FLT_WINDOW_MIN	        3000        // repeated arcs within defined time will assert an arc fault
+#define ARC_FLT_WINDOW_MAX	        5000        // repeated arcs within defined time will assert an arc fault
 #define HTR_BACKOFF_WINDOW      5400          // Duration with no pulse to start heater backoff
 #define HTR_WARMUP_DEFAULT_DURATION     18000           // Default duration for heater timer delay
 #define HV_ON_DELAY             500      // Time allotted for HV turn on during warmup
@@ -130,7 +131,7 @@
 #define HEATER_DEFAULT_VOLTAGE		3.15 	// 6.3V
 #define HEATER_FAST_WARMUP_VOLTAGE	3.6		// 7V
 #define HEATER_BACKOFF_VOLTAGE		3.075	//6.15V
-#define ARCS_REPEATED				5 
+#define ARCS_REPEATED				3 
 
 
 // --------------------- T1 Configuration -----
@@ -170,7 +171,8 @@ typedef struct {
   unsigned int top_resistor;
   unsigned int cathode_set_voltage;
   unsigned int top_set_voltage;
-  unsigned int arc_counter;
+  unsigned int arc_counter; //consider adding volatile
+  unsigned int arc_timer;
   unsigned int heater_warmup_timer;
   unsigned int heater_backoff_time_counter;
   unsigned int volterrn_time_counter;

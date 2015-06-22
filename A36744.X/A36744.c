@@ -94,13 +94,13 @@ void DoStateMachine(void) {
 		}		
 		if global_data_A36744.heater_warmup_timer <= HV_ON_DELAY
 			PIN_PIC_HV_ON = 1 ;
-		if (volterrn digital input goes low) {
-	global_data_A36744.control_state = STATE_SHUTDOWN;
-	}
-	if (CheckHeaterFlt)
-		PIN_HTR_LED = 1;
-	else
-		PIN_HTR_LED = 0;
+		if (_INT1IF == 1) {
+			global_data_A36744.control_state = STATE_SHUTDOWN;
+		}
+		if (CheckHeaterFlt)
+			PIN_HTR_LED = 1;
+		else
+			PIN_HTR_LED = 0;
 	
 	}
     global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
@@ -115,22 +115,23 @@ void DoStateMachine(void) {
   During the ready state, the controller checks for the following conditions:
 	1. Heater Backoff - if there is no pulse input (pretrans) for a given amount of time (heater backoff window), 
 		then the heater voltage will be backed off to heater backoff voltage.	
-		Implementation notes - pretrans is used as an input capture, which asserts its flag on every rising edge. As long as 
-		a rising edge is detected, the backoff counter is reset. If there is no rising edge for long enough, the counter will
-		reach zero and lower the heater voltage.
+		Implementation notes - backoff counter is always counting back with the 10ms timer. pretrans is used as a latched input (external interrupt), 
+		which asserts its flag on every rising edge. As long as a rising edge is detected, the backoff counter is reset. 
+		If there is no rising edge for long enough, the counter will reach zero and lower the heater voltage.
 	2. Arc fault - if a number of repeated arcs (arcs repeated) is detected within a given 
-		amount of time (arc fault window), then an arc fault is generated.
+		amount of time (arc fault window min-max), then an arc fault is generated.
 	3. Check for Volterrn condition- once asserted, the power supply needs to be shut down. When cleared, 
 		the power supply needs to be brought up again and start the heater warmup sequence.
   */
   
 	_T3IF = 0;
-	//_IC1IF = 0;
+	_INT4IF = 0;
+	_INT0IE = 1;
     while (global_data_A36744.control_state == STATE_READY) {
 		
-		//if _IC1IF == 1 // keep heater at its default values as long as pulses are coming in.
+		if _INT4IF == 1 // keep heater at its default values as long as pulses are coming in.
 		{
-		//	_IC1IF = 0;
+			_INT4IF = 0;
 			global_data_A36744.heater_backoff_time_counter = HTR_BACKOFF_WINDOW;
 			global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
 		}		
@@ -144,39 +145,69 @@ void DoStateMachine(void) {
 			{
 				global_data_A36744.heater_set_voltage = HEATER_BACKOFF_VOLTAGE;
 			}
+			if (global_data_A36744.arc_counter != 0) // what happens if arc detected in this line?
+			{
+				global_data_A36744.arc_timer++;
+			}					
+			else{
+				global_data_A36744.arc_timer = 0; // does this make sense??
+			}
 		}
 	   output htr voltage.
 	  
+	  if (global_data_A36744.arc_timer >= ARC_FLT_WINDOW_MIN)
+	  {
+		  _INT0IE = 0;
+		  if (global_data_A36744.arc_counter >= ARCS_REPEATED)
+		  {
+			  PIN_PIC_ARC_FLT_NOT = 0;
+			  _delay_ms(10);
+			  PIN_PIC_ARC_FLT_NOT = 1;
+			  _INT0IF = 0;
+		  }
+	
+		 if ( global_data_A36744.arc_timer >= ARC_FLT_WINDOW_MAX)
+		 {
+			 global_data_A36744.arc_counter = 0;
+		 }
+		  
+		  _INT0IE = 1; 
+	  } 
 	  
-	  check arc detect
-	  if (volterrn digital input goes low) {
-	global_data_A36744.control_state = STATE_SHUTDOWN;
+	  if (_INT1IF == 1) {
+		global_data_A36744.control_state = STATE_SHUTDOWN;
 	}
-	if (CheckHeaterFlt)
-		PIN_HTR_LED = 1;
-	else
-		PIN_HTR_LED = 0; 
-      
+		if (CheckHeaterFlt)
+			PIN_HTR_LED = 1;
+		else
+			PIN_HTR_LED = 0; 
     }
     break;
      
     
  case STATE_SHUTDOWN:
-    Disable HV
-	disable heater
-	wait 50ms
-	disable grid
+    _INT1EP = 0; //change interrupt to detect rising edge (removal of the volterrn condition)
+	_INT1IF = 0;
+	PIN_PIC_HV_ON = 0;
+	PIN_HTR_ENABLE_NOT = 1;
+	_delay_ms (500);
+	PIN_GRID_ENABLE = 0;
 	
 	while (global_data_A36744.control_state == STATE_SHUTDOWN) {
-     	 if volterrn goes hi
-	 {
-		 turn on grid
-		 wait 10ms
-		 set heater voltage to default value.
+     	 if (_INT1IF == 1)
+		{
+		 _INT1IF = 0;
+		 PIN_GRID_ENABLE = 1;
+		 _delay_ms (100);
+		 global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
 		 global_data_A36744.control_state = STATE_WARMUP;
+		 _INT1EP = 1 ;
+		}
+		if (CheckHeaterFlt)
+			PIN_HTR_LED = 1;
+		else
+			PIN_HTR_LED = 0;
 	 }
-	 
-    }
 	break;
 
 	
@@ -215,11 +246,11 @@ void InitializeA36744(void) {
 
 
   //Timer1 setup
-  PR1 = PR1_SETTING;
-  _T1IF = 0; 		// Clear Timer1 interrupt flag
- //  _T1IP = 6; 	// Set Timer1 interrupt priority
-  _T1IE = 0; 		//Disable Timer1 Interrupt
-  T1CON = T1CON_SETTING;
+ // PR1 = PR1_SETTING;
+ // _T1IF = 0; 		// Clear Timer1 interrupt flag
+ // _T1IP = 5; 	// Set Timer1 interrupt priority
+ // _T1IE = 1; 		//Enable Timer1 Interrupt
+ // T1CON = T1CON_SETTING;
 
   //Timer3 setup
   PR3 = PR3_VALUE_10_MILLISECONDS;
@@ -235,11 +266,17 @@ void InitializeA36744(void) {
   ADCON1 = ADCON1_SETTING;
   
 // additional interrupt set-up
-//  _INT1IF = 0;
-//  _INT1IP = 7;
-//  _INT1IE = 1;
+  _INT4IF = 0;
+  _INT4IP = 1;
+  _INT4IE = 0;
 
-  
+  _INT0IF = 0;
+  _INT0IP = 4;
+
+  _INT1IF = 0;
+  _INT1IP = 5;
+  _INT1IE = 0;
+  _INT1EP = 1;
 
   // Initialize LTC DAC
   //SetupLTC265X(&U23_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RG15, _PIN_RC1);
@@ -278,4 +315,10 @@ int CheckHeaterFlt (void) {
 	return (HTR_SUM_FLT || HTR_OC_FLT || HTR_UC_FLT);
 }
 
-
+void __attribute__((interrupt, no_auto_psv)) _INT0Interrupt(void) {
+  /*
+    External interrupt 0 indicates an arc was detected. each interrupt will increase the arc counter by 1. 
+  */
+	global_data_A36744.arc_counter++;
+    _T1IF = 0;
+}
