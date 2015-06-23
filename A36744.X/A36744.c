@@ -13,7 +13,7 @@ _FGS(GWRP_OFF & GSS_OFF);
 _FICD(PGD);
 
 
-LTC265X U23_LTC2654;
+LTC265X U2_LTC2654;
 
 #define EK_VOLTAGE_TABLE_VALUES 50,76,102,128,153,179,204,229,253,277,300,322,344,366,386,406,425,443,460,476,491,505,517,529,540,549,557,564,570,574,577,579,580,579,577,574,570,564,557,549,540,529,517,505,491,476,460,443,425,406,386,366,344,322,300,277,253,229,204,179,153,128,102,76,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50
 
@@ -58,14 +58,18 @@ void DoStateMachine(void) {
 		Convert ADC Ek resistor
 		Convert ADC Top resistor
 		while (conversion incomplete)
-		Get Top and Ek reference voltages.
-		output ek and top voltages.
-		output htr voltage.
-		while (conversion incomplete)
+	//	Get Top and Ek reference voltage indexii
+	
+		ETMAnalogSetOutput(&global_data_A36744.cathode_set_voltage, EkReferenceVoltageTable[/*blah*/]);
+		ETMAnalogSetOutput(&global_data_A36744.top_set_voltage, TopReferenceVoltageTable[/*blah*/]);
+		ETMAnalogScaleCalibrateDACSetting (&global_data_A36744.cathode_set_voltage);
+		ETMAnalogScaleCalibrateDACSetting (&global_data_A36744.top_set_voltage);
+		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_B,global_data_A36744.cathode_set_voltage.dac_setting_scaled_and_calibrated);
+		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_A,global_data_A36744.top_set_voltage.dac_setting_scaled_and_calibrated);
+
 	}
     global_data_A36744.control_state = STATE_WARMUP;
     break;
-
 	
   case STATE_WARMUP:
     int flash_LED_timer = 10;
@@ -73,7 +77,9 @@ void DoStateMachine(void) {
 	PIN_HTR_ENABLE_NOT = 0;
 	while (global_data_A36744.heater_warmup_timer > 0)
 	{
-		output heater set voltage.
+		ETMAnalogScaleCalibrateDACSetting (&global_data_A36744.heater_set_voltage);
+		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_set_voltage.dac_setting_scaled_and_calibrated);
+
 		if (_T3IF == 1)
 		{
 			_T3IF = 0;
@@ -85,9 +91,9 @@ void DoStateMachine(void) {
 			flash_LED_timer = 50;
 			PIN_HTR_LED =^ 1;
 		}
-		if (SHORT_HEAT == 1 && global_data_A36744.heater_set_voltage != HEATER_FAST_WARMUP_VOLTAGE) 
+		if (SHORT_HEAT == 1 && global_data_A36744.heater_set_voltage.set_point != HEATER_FAST_WARMUP_VOLTAGE) 
 		{
-			global_data_A36744.heater_set_voltage = HEATER_FAST_WARMUP_VOLTAGE;
+			ETMAnalogSetOutput( &global_data_A36744.heater_set_voltage , HEATER_FAST_WARMUP_VOLTAGE);
 			
 			if global_data_A36744.heater_warmup_timer > HTR_WARMUP_SHORT_DURATION
 				global_data_A36744.heater_warmup_timer = HTR_WARMUP_SHORT_DURATION;
@@ -103,7 +109,9 @@ void DoStateMachine(void) {
 			PIN_HTR_LED = 0;
 	
 	}
-    global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
+    ETMAnalogSetOutput( &global_data_A36744.heater_set_voltage , HEATER_DEFAULT_VOLTAGE);
+	ETMAnalogScaleCalibrateDACSetting (&global_data_A36744.heater_set_voltage);
+	WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_set_voltage.dac_setting_scaled_and_calibrated);
 	global_data_A36744.heater_warmup_timer = HTR_WARMUP_DEFAULT_DURATION;
 	PIN_STANDBY = 0;
 	PIN_ETM_RESET_DETECT = 1;
@@ -133,17 +141,17 @@ void DoStateMachine(void) {
 		{
 			_INT4IF = 0;
 			global_data_A36744.heater_backoff_time_counter = HTR_BACKOFF_WINDOW;
-			global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
+			ETMAnalogSetOutput( &global_data_A36744.heater_set_voltage, HEATER_DEFAULT_VOLTAGE);
 		}		
 			
 			
-      if (_T3IF == 1)
+		if (_T3IF == 1)
 		{
 			_T3IF = 0;
 			global_data_A36744.heater_backoff_time_counter--; 
 			if global_data_A36744.heater_backoff_time_counter == 0 // change heater voltage to backoff value if no pulses came in for x amount of time.
 			{
-				global_data_A36744.heater_set_voltage = HEATER_BACKOFF_VOLTAGE;
+				ETMAnalogSetOutput( &global_data_A36744.heater_set_voltage, HEATER_BACKOFF_VOLTAGE);
 			}
 			if (global_data_A36744.arc_counter != 0) // what happens if arc detected in this line?
 			{
@@ -153,7 +161,8 @@ void DoStateMachine(void) {
 				global_data_A36744.arc_timer = 0; // does this make sense??
 			}
 		}
-	   output htr voltage.
+		ETMAnalogScaleCalibrateDACSetting (&global_data_A36744.heater_set_voltage);
+		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_set_voltage.dac_setting_scaled_and_calibrated);
 	  
 	  if (global_data_A36744.arc_timer >= ARC_FLT_WINDOW_MIN)
 	  {
@@ -199,7 +208,7 @@ void DoStateMachine(void) {
 		 _INT1IF = 0;
 		 PIN_GRID_ENABLE = 1;
 		 _delay_ms (100);
-		 global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
+		 ETMAnalogSetOutput(& global_data_A36744.heater_set_voltage, HEATER_DEFAULT_VOLTAGE);
 		 global_data_A36744.control_state = STATE_WARMUP;
 		 _INT1EP = 1 ;
 		}
@@ -279,34 +288,32 @@ void InitializeA36744(void) {
   _INT1EP = 1;
 
   // Initialize LTC DAC
-  //SetupLTC265X(&U23_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RG15, _PIN_RC1);
-  SetupLTC265X(&U23_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RC1, _PIN_RC3);
+  SetupLTC265X(&U2_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RG15, _PIN_RC1);
+  //SetupLTC265X(&U2_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RC1, _PIN_RC3);
 
-//#define AFT_CONTROL_VOLTAGE_MAX_PROGRAM  12000
-//#define AFT_CONTROL_VOLTAGE_MIN_PROGRAM  1000
 
   ETMAnalogInitializeOutput(&global_data_A36744.heater_set_voltage,
-			    MACRO_DEC_TO_SCALE_FACTOR_16(3.15),
+			    MACRO_DEC_TO_SCALE_FACTOR_16(6300), //what number do I send? X3
 			    OFFSET_ZERO,
 			    ANALOG_OUTPUT_0,
-			    AFT_CONTROL_VOLTAGE_MAX_PROGRAM,
-			    AFT_CONTROL_VOLTAGE_MIN_PROGRAM,
+			    HEATER_SET_VOLTAGE_MAX_PROGRAM,
+			    HEATER_SET_VOLTAGE_MIN_PROGRAM,
 			    0);
 
-  ETMAnalogInitializeOutput(&global_data_A36744.aft_control_voltage,
-			    MACRO_DEC_TO_SCALE_FACTOR_16(3.98799),
+  ETMAnalogInitializeOutput(&global_data_A36744.cathode_set_voltage,
+			    MACRO_DEC_TO_SCALE_FACTOR_16(10300),
 			    OFFSET_ZERO,
 			    ANALOG_OUTPUT_0,
-			    AFT_CONTROL_VOLTAGE_MAX_PROGRAM,
-			    AFT_CONTROL_VOLTAGE_MIN_PROGRAM,
+			    CATHODE_SET_VOLTAGE_MAX_PROGRAM,
+			    CATHODE_SET_VOLTAGE_MIN_PROGRAM,
 			    0);
 
-  ETMAnalogInitializeOutput(&global_data_A36744.aft_control_voltage,
-			    MACRO_DEC_TO_SCALE_FACTOR_16(3.98799),
+  ETMAnalogInitializeOutput(&global_data_A36744.top_set_voltage,
+			    MACRO_DEC_TO_SCALE_FACTOR_16(0),
 			    OFFSET_ZERO,
 			    ANALOG_OUTPUT_0,
-			    AFT_CONTROL_VOLTAGE_MAX_PROGRAM,
-			    AFT_CONTROL_VOLTAGE_MIN_PROGRAM,
+			    TOP_SET_VOLTAGE_MAX_PROGRAM,
+			    TOP_SET_VOLTAGE_MIN_PROGRAM,
 			    0);
   
 }

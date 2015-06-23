@@ -128,11 +128,17 @@
 #define HTR_WARMUP_SHORT_DURATION     6000           // Fast warmup duration in secs for heater timer delay
 #define HTR_WARMUP_RECOVERY_DURATION	1000
 
-#define HEATER_DEFAULT_VOLTAGE		3.15 	// 6.3V
-#define HEATER_FAST_WARMUP_VOLTAGE	3.6		// 7V
-#define HEATER_BACKOFF_VOLTAGE		3.075	//6.15V
+#define HEATER_DEFAULT_VOLTAGE		6300 		//mV
+#define HEATER_FAST_WARMUP_VOLTAGE	7000		//mV
+#define HEATER_BACKOFF_VOLTAGE		6150		//mV
 #define ARCS_REPEATED				3 
 
+#define HEATER_SET_VOLTAGE_MAX_PROGRAM  7000 	//mV
+#define HEATER_SET_VOLTAGE_MIN_PROGRAM  6000 	//mV
+#define CATHODE_SET_VOLTAGE_MAX_PROGRAM  10300	//V
+#define CATHODE_SET_VOLTAGE_MIN_PROGRAM  11500	//V
+#define TOP_SET_VOLTAGE_MAX_PROGRAM  150		//V
+#define TOP_SET_VOLTAGE_MIN_PROGRAM  0			//V
 
 // --------------------- T1 Configuration -----
 // With 1:8 prescale 
@@ -166,11 +172,11 @@
 
 typedef struct {
   unsigned int control_state;
-  unsigned int heater_set_voltage;
+  AnalogOutput heater_set_voltage;
   unsigned int cathode_resistor;
   unsigned int top_resistor;
-  unsigned int cathode_set_voltage;
-  unsigned int top_set_voltage;
+  AnalogOutput cathode_set_voltage;
+  AnalogOutput top_set_voltage;
   unsigned int arc_counter; //consider adding volatile
   unsigned int arc_timer;
   unsigned int heater_warmup_timer;
