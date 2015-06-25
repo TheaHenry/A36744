@@ -5,13 +5,13 @@
 
 #define FCY_CLK 10000000
 
-
 #include <xc.h>
 #include <libpic30.h>
-#include <adc10.h>
+#include <adc12.h>
 #include <timer.h>
 #include <pwm.h>
 
+#include "ETM_SCALE.h"
 #include "ETM.h"
 
 /*
@@ -140,11 +140,19 @@
 #define TOP_SET_VOLTAGE_MAX_PROGRAM  150		//V
 #define TOP_SET_VOLTAGE_MIN_PROGRAM  0			//V
 
+#define HEATER_FIXED_SCALE		(MACRO_DEC_TO_CAL_FACTOR_2(0.6176))
+#define HEATER_FIXED_OFFSET		-1// should be -1.1714
+#define TOP_FIXED_SCALE		(MACRO_DEC_TO_CAL_FACTOR_16(14.927))
+#define TOP_FIXED_OFFSET		1// should be 1.295
+#define CATHODE_FIXED_SCALE		(MACRO_DEC_TO_CAL_FACTOR_16(0.4))
+#define CATHODE_FIXED_OFFSET	-2000
+
+
 // --------------------- T1 Configuration -----
-// With 1:8 prescale 
+//  
 
 #define T1CON_SETTING     (T1_ON & T1_IDLE_CON & T1_GATE_OFF & T1_PS_1_256 & T1_SYNC_EXT_OFF & T1_SOURCE_INT)
-#define PR1_SETTING  (unsigned int)(FCY_CLK / 32 / 8 / ARC_FLT_WINDOW)
+#define PR1_SETTING  (unsigned int)(FCY_CLK / 4 / ARC_FLT_WINDOW)
 
 
 /* 
@@ -163,18 +171,27 @@
 
 // -------------------  ADC CONFIGURATION ----------------- //
 //Still needs to be defined for application
-#define ADCON1_SETTING   (ADC_MODULE_ON & ADC_IDLE_STOP & ADC_FORMAT_INTG & ADC_CLK_MANUAL & ADC_SAMPLE_SIMULTANEOUS & ADC_AUTO_SAMPLING_ON)
-#define ADCON2_SETTING   (ADC_VREF_EXT_EXT & ADC_SCAN_OFF & ADC_CONVERT_CH_0ABC & ADC_SAMPLES_PER_INT_1 & ADC_ALT_BUF_ON & ADC_ALT_INPUT_OFF)
-#define ADCON3_SETTING   (ADC_SAMPLE_TIME_10 & ADC_CONV_CLK_SYSTEM & ADC_CONV_CLK_2Tcy)
-#define ADCHS_SETTING    (ADC_CHX_POS_SAMPLEA_AN3AN4AN5 & ADC_CHX_NEG_SAMPLEA_VREFN & ADC_CH0_POS_SAMPLEA_AN8 & ADC_CH0_NEG_SAMPLEA_VREFN & ADC_CHX_POS_SAMPLEB_AN3AN4AN5 & ADC_CHX_NEG_SAMPLEB_VREFN & ADC_CH0_POS_SAMPLEB_AN8 & ADC_CH0_NEG_SAMPLEB_VREFN)
-#define ADPCFG_SETTING   (ENABLE_AN2_ANA & ENABLE_AN3_ANA & ENABLE_AN4_ANA & ENABLE_AN5_ANA & ENABLE_AN8_ANA)
-#define ADCSSL_SETTING   (SKIP_SCAN_AN0 & SKIP_SCAN_AN1 & SKIP_SCAN_AN2 & SKIP_SCAN_AN6 & SKIP_SCAN_AN7 & SKIP_SCAN_AN9 & SKIP_SCAN_AN10 & SKIP_SCAN_AN11 & SKIP_SCAN_AN12 & SKIP_SCAN_AN13 & SKIP_SCAN_AN14 & SKIP_SCAN_AN15)
+#define ADCON1_SETTING          (ADC_MODULE_OFF & ADC_IDLE_STOP & ADC_FORMAT_INTG & ADC_CLK_AUTO & ADC_AUTO_SAMPLING_ON)
+#define ADCON2_SETTING          (ADC_VREF_EXT_EXT & ADC_SCAN_ON & ADC_SAMPLES_PER_INT_8 & ADC_ALT_BUF_ON & ADC_ALT_INPUT_OFF)
+#define ADCHS_SETTING           (ADC_CH0_POS_SAMPLEA_AN3 & ADC_CH0_NEG_SAMPLEA_VREFN & ADC_CH0_POS_SAMPLEB_AN3 & ADC_CH0_NEG_SAMPLEB_VREFN)
+#define ADPCFG_SETTING          (ENABLE_AN3_ANA & ENABLE_AN4_ANA)
+
+//#define ADCSSL_SETTING_OPERATE  (SKIP_SCAN_AN0 & SKIP_SCAN_AN1 & SKIP_SCAN_AN2 & SKIP_SCAN_AN5 & SKIP_SCAN_AN12 & SKIP_SCAN_AN13 & SKIP_SCAN_AN14 & SKIP_SCAN_AN15)
+//#define ADCON3_SETTING_OPERATE  (ADC_SAMPLE_TIME_4 & ADC_CONV_CLK_SYSTEM & ADC_CONV_CLK_9Tcy2)
+
+#define ADCSSL_SETTING_STARTUP  (SKIP_SCAN_AN0 & SKIP_SCAN_AN1 & SKIP_SCAN_AN2 & SKIP_SCAN_AN5 & SKIP_SCAN_AN6 &  SKIP_SCAN_AN7 & SKIP_SCAN_AN8 & SKIP_SCAN_AN9 & SKIP_SCAN_AN10 & SKIP_SCAN_AN11 & SKIP_SCAN_AN12 & SKIP_SCAN_AN13 & SKIP_SCAN_AN14 & SKIP_SCAN_AN15)
+#define ADCON3_SETTING_STARTUP  (ADC_SAMPLE_TIME_31 & ADC_CONV_CLK_SYSTEM & ADC_CONV_CLK_10Tcy)
+
 
 typedef struct {
   unsigned int control_state;
   AnalogOutput heater_set_voltage;
-  unsigned int cathode_resistor;
-  unsigned int top_resistor;
+  unsigned long cathode_resistor_accumulator;
+  unsigned long top_resistor_accumulator;
+  unsigned int cathode_lookup_index;
+  unsigned int top_lookup_index;
+  unsigned int accumulator_counter;
+  unsigned int adc_conversion_complete;
   AnalogOutput cathode_set_voltage;
   AnalogOutput top_set_voltage;
   unsigned int arc_counter; //consider adding volatile
@@ -182,9 +199,14 @@ typedef struct {
   unsigned int heater_warmup_timer;
   unsigned int heater_backoff_time_counter;
   unsigned int volterrn_time_counter;
+  
 
 } ControlData;
 
 extern ControlData global_data_A36744;
+
+
+
+
 
 #endif
