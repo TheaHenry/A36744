@@ -9,9 +9,7 @@
 #include <libpic30.h>
 #include <adc12.h>
 #include <timer.h>
-#include <pwm.h>
 
-#include "ETM_SCALE.h"
 #include "ETM.h"
 
 /*
@@ -19,7 +17,7 @@
 
   SPI1   - Used/Configured by LTC265X Module
   Timer3 - 10ms timer 
-  Timer1 - Used for repeated arc detection
+  ADC Module
 
 */
 
@@ -88,7 +86,7 @@
 
 // ------------- PIN DEFINITIONS ------------------- ///
 
-//Control
+
 #define PIN_PIC_ARC_FLT_NOT         	_LATB10
 #define PIN_HTR_ENABLE_NOT           	_LATD11
 #define PIN_STANDBY			            _LATD0
@@ -97,62 +95,57 @@
 #define PIN_GRID_ENABLE				    _LATG3
 #define PIN_ETM_RESET_DETECT		    _LATG14
 
-//Status
+
 #define PIN_OVERLOAD          			_LATC2
 #define PIN_PIC_ERROR        		    _LATB14
 #define PIN_HTR_LED				    	_LATG12
 #define PIN_PIC_VOLTERRN_NOT			_LATB13
 
-// Test Points
+
 #define PIN_TEST_POINT_A                 _LATB11
 
-// LEDs
+
 #define PIN_LED_OPERATIONAL_GREEN        _LATA14
 #define PIN_LED_A_RED                    _LATG8
 
-//Discrete Inputs
+
 #define SHORT_RESET_NOT					_RD1
-#define SHORT_HEAT						_RD9
-#define HTR_SUM_FLT						_RC14
-#define HTR_OC_FLT						_RD5
-#define HTR_UC_FLT						_RF5
-#define PRETRANS						_RD8
+#define SHORT_HEAT					_RD9
+#define HTR_SUM_FLT					_RC14
+#define HTR_OC_FLT					_RD5
+#define HTR_UC_FLT					_RF5
+#define PRETRANS					_RD8
 
 
 // ---------------- Timing Configuration Values ------------- //
-#define ARC_FLT_WINDOW_MIN	        3000        // repeated arcs within defined time will assert an arc fault
-#define ARC_FLT_WINDOW_MAX	        5000        // repeated arcs within defined time will assert an arc fault
-#define HTR_BACKOFF_WINDOW      5400          // Duration with no pulse to start heater backoff
+#define ARC_FLT_WINDOW_MIN	        	3000        // repeated arcs within defined time will assert an arc fault
+#define ARC_FLT_WINDOW_MAX	        	5000        // repeated arcs within defined time will assert an arc fault
+#define HTR_BACKOFF_WINDOW      		5400          // Duration with no pulse to start heater backoff
 #define HTR_WARMUP_DEFAULT_DURATION     18000           // Default duration for heater timer delay
-#define HV_ON_DELAY             500      // Time allotted for HV turn on during warmup
-#define HTR_WARMUP_SHORT_DURATION     6000           // Fast warmup duration in secs for heater timer delay
+#define HV_ON_DELAY             		500      // Time allotted for HV turn on during warmup
+#define HTR_WARMUP_SHORT_DURATION     	6000           // Fast warmup duration in secs for heater timer delay
 #define HTR_WARMUP_RECOVERY_DURATION	1000
 
-#define HEATER_DEFAULT_VOLTAGE		6300 		//mV
-#define HEATER_FAST_WARMUP_VOLTAGE	7000		//mV
-#define HEATER_BACKOFF_VOLTAGE		6150		//mV
-#define ARCS_REPEATED				3 
 
-#define HEATER_SET_VOLTAGE_MAX_PROGRAM  7000 	//mV
-#define HEATER_SET_VOLTAGE_MIN_PROGRAM  6000 	//mV
-#define CATHODE_SET_VOLTAGE_MAX_PROGRAM  10300	//V
-#define CATHODE_SET_VOLTAGE_MIN_PROGRAM  11500	//V
-#define TOP_SET_VOLTAGE_MAX_PROGRAM  150		//V
-#define TOP_SET_VOLTAGE_MIN_PROGRAM  0			//V
+//--------------- Supply Configuration Values --------------------------------//
+#define HEATER_DEFAULT_VOLTAGE			6300 		//mV
+#define HEATER_FAST_WARMUP_VOLTAGE		7000		//mV
+#define HEATER_BACKOFF_VOLTAGE			6150		//mV
+#define ARCS_REPEATED					3 
 
-#define HEATER_FIXED_SCALE		(MACRO_DEC_TO_CAL_FACTOR_2(0.6176))
+#define HEATER_FIXED_SCALE		0.6176
 #define HEATER_FIXED_OFFSET		-1// should be -1.1714
-#define TOP_FIXED_SCALE		(MACRO_DEC_TO_CAL_FACTOR_16(14.927))
+#define TOP_FIXED_SCALE                 14.927
 #define TOP_FIXED_OFFSET		1// should be 1.295
-#define CATHODE_FIXED_SCALE		(MACRO_DEC_TO_CAL_FACTOR_16(0.4))
+#define CATHODE_FIXED_SCALE		0.4
 #define CATHODE_FIXED_OFFSET	-2000
 
 
 // --------------------- T1 Configuration -----
 //  
 
-#define T1CON_SETTING     (T1_ON & T1_IDLE_CON & T1_GATE_OFF & T1_PS_1_256 & T1_SYNC_EXT_OFF & T1_SOURCE_INT)
-#define PR1_SETTING  (unsigned int)(FCY_CLK / 4 / ARC_FLT_WINDOW)
+//#define T1CON_SETTING     (T1_ON & T1_IDLE_CON & T1_GATE_OFF & T1_PS_1_256 & T1_SYNC_EXT_OFF & T1_SOURCE_INT)
+//#define PR1_SETTING  (unsigned int)(FCY_CLK / 4 / ARC_FLT_WINDOW)
 
 
 /* 
@@ -170,7 +163,6 @@
 
 
 // -------------------  ADC CONFIGURATION ----------------- //
-//Still needs to be defined for application
 #define ADCON1_SETTING          (ADC_MODULE_OFF & ADC_IDLE_STOP & ADC_FORMAT_INTG & ADC_CLK_AUTO & ADC_AUTO_SAMPLING_ON)
 #define ADCON2_SETTING          (ADC_VREF_EXT_EXT & ADC_SCAN_ON & ADC_SAMPLES_PER_INT_8 & ADC_ALT_BUF_ON & ADC_ALT_INPUT_OFF)
 #define ADCHS_SETTING           (ADC_CH0_POS_SAMPLEA_AN3 & ADC_CH0_NEG_SAMPLEA_VREFN & ADC_CH0_POS_SAMPLEB_AN3 & ADC_CH0_NEG_SAMPLEB_VREFN)
@@ -182,31 +174,30 @@
 #define ADCSSL_SETTING_STARTUP  (SKIP_SCAN_AN0 & SKIP_SCAN_AN1 & SKIP_SCAN_AN2 & SKIP_SCAN_AN5 & SKIP_SCAN_AN6 &  SKIP_SCAN_AN7 & SKIP_SCAN_AN8 & SKIP_SCAN_AN9 & SKIP_SCAN_AN10 & SKIP_SCAN_AN11 & SKIP_SCAN_AN12 & SKIP_SCAN_AN13 & SKIP_SCAN_AN14 & SKIP_SCAN_AN15)
 #define ADCON3_SETTING_STARTUP  (ADC_SAMPLE_TIME_31 & ADC_CONV_CLK_SYSTEM & ADC_CONV_CLK_10Tcy)
 
-
 typedef struct {
   unsigned int control_state;
-  AnalogOutput heater_set_voltage;
+  unsigned int heater_set_voltage;
+  unsigned int heater_dac_setting_scaled;
   unsigned long cathode_resistor_accumulator;
+  unsigned int adc_conversion_complete;
   unsigned long top_resistor_accumulator;
   unsigned int cathode_lookup_index;
   unsigned int top_lookup_index;
   unsigned int accumulator_counter;
-  unsigned int adc_conversion_complete;
-  AnalogOutput cathode_set_voltage;
-  AnalogOutput top_set_voltage;
-  unsigned int arc_counter; //consider adding volatile
+  unsigned int cathode_adc_conversion_complete;
+  unsigned int cathode_set_voltage;
+  unsigned int cathode_dac_setting_scaled;
+  unsigned int top_set_voltage;
+  unsigned int top_dac_setting_scaled;
+  unsigned int arc_counter;
   unsigned int arc_timer;
   unsigned int heater_warmup_timer;
   unsigned int heater_backoff_time_counter;
   unsigned int volterrn_time_counter;
-  
 
 } ControlData;
 
 extern ControlData global_data_A36744;
-
-
-
 
 
 #endif
