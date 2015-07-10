@@ -5,7 +5,7 @@
 
 _FOSC(ECIO & CSW_FSCM_OFF); 
 _FWDT(WDT_ON & WDTPSA_512 & WDTPSB_8);  // 8 Second watchdog timer 
-_FBORPOR(PWRT_OFF & BORV_45 & PBOR_OFF & MCLR_EN);
+_FBORPOR(PWRT_64 & BORV_45 & PBOR_OFF & MCLR_EN);
 _FBS(WR_PROTECT_BOOT_OFF & NO_BOOT_CODE & NO_BOOT_EEPROM & NO_BOOT_RAM);
 _FSS(WR_PROT_SEC_OFF & NO_SEC_CODE & NO_SEC_EEPROM & NO_SEC_RAM);
 _FGS(CODE_PROT_OFF);
@@ -61,8 +61,11 @@ void DoStateMachine(void) {
 		global_data_A36744.cathode_set_voltage = EkReferenceVoltageTable[global_data_A36744.cathode_lookup_index];
 		global_data_A36744.top_set_voltage = TopReferenceVoltageTable[global_data_A36744.top_lookup_index];
 		global_data_A36744.cathode_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.cathode_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(CATHODE_FIXED_SCALE),CATHODE_FIXED_OFFSET);
-		global_data_A36744.top_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.top_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(TOP_FIXED_SCALE),TOP_FIXED_OFFSET);
-		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_B,global_data_A36744.cathode_dac_setting_scaled);
+		global_data_A36744.cathode_dac_setting_scaled <<=4;
+                global_data_A36744.top_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.top_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(TOP_FIXED_SCALE),TOP_FIXED_OFFSET);
+                global_data_A36744.top_dac_setting_scaled <<=4;
+
+                WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_B,global_data_A36744.cathode_dac_setting_scaled);
 		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_A,global_data_A36744.top_dac_setting_scaled);
 
 	}
@@ -77,7 +80,8 @@ void DoStateMachine(void) {
 	while (global_data_A36744.heater_warmup_timer > 0)
 	{
 		global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
-		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
+		global_data_A36744.heater_dac_setting_scaled <<=4;
+                WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
 
 		if (_T3IF == 1)
 		{
@@ -110,7 +114,8 @@ void DoStateMachine(void) {
 	}
     global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
 	global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
-	WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
+	global_data_A36744.heater_dac_setting_scaled <<=4;
+        WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
 	global_data_A36744.heater_warmup_timer = HTR_WARMUP_DEFAULT_DURATION;
 	PIN_STANDBY = 0;
 	PIN_ETM_RESET_DETECT = 1;
@@ -162,7 +167,8 @@ void DoStateMachine(void) {
 			global_data_A36744.arc_timer++;			
 		}
 		global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
-		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
+		global_data_A36744.heater_dac_setting_scaled <<=4;
+                WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
 	  
 	  if (_INT0IF == 1)
 	  {
@@ -318,6 +324,8 @@ void InitializeA36744(void) {
   SetupLTC265X(&U2_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RG15, _PIN_RC1);
   //SetupLTC265X(&U2_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RC1, _PIN_RC3);
 
+  __delay32(100000);
+  
 
   global_data_A36744.heater_set_voltage = 0;
   global_data_A36744.cathode_set_voltage = 0;
@@ -378,4 +386,9 @@ void __attribute__((interrupt, no_auto_psv)) _ADCInterrupt(void) {
 	global_data_A36744.adc_conversion_complete = 1;
   }
   
+}
+void __attribute__((interrupt, no_auto_psv)) _DefaultInterrupt(void) {
+    Nop();
+    Nop();
+    Nop();
 }
