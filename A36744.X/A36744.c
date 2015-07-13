@@ -1,10 +1,11 @@
 #include "A36744.h"
 #include "FIRMWARE_VERSION.h"
 
+
 // This is the firmware for Interface Board
 
-_FOSC(ECIO & CSW_FSCM_OFF); 
-_FWDT(WDT_ON & WDTPSA_512 & WDTPSB_8);  // 8 Second watchdog timer 
+_FOSC(EC & CSW_FSCM_OFF); 
+_FWDT(WDT_OFF & WDTPSA_512 & WDTPSB_8);  
 _FBORPOR(PWRT_OFF & BORV_45 & PBOR_OFF & MCLR_EN);
 _FBS(WR_PROTECT_BOOT_OFF & NO_BOOT_CODE & NO_BOOT_EEPROM & NO_BOOT_RAM);
 _FSS(WR_PROT_SEC_OFF & NO_SEC_CODE & NO_SEC_EEPROM & NO_SEC_RAM);
@@ -36,8 +37,11 @@ LTC265X U2_LTC2654;
 
 int main(void) {
   global_data_A36744.control_state = STATE_STARTUP;
+  _TRISA14 = 0;
   while (1) {
-    DoStateMachine();
+    //DoStateMachine();
+      PIN_LED_OPERATIONAL_GREEN = !PIN_LED_OPERATIONAL_GREEN;
+      __delay32(1000000);
   }
 }
 
@@ -378,4 +382,9 @@ void __attribute__((interrupt, no_auto_psv)) _ADCInterrupt(void) {
 	global_data_A36744.adc_conversion_complete = 1;
   }
   
+}
+void __attribute__((interrupt, no_auto_psv)) _DefaultInterrupt(void)
+{
+
+        while (1);
 }
