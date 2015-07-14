@@ -7,10 +7,6 @@
       <itemPath>A36744.h</itemPath>
       <itemPath>FIRMWARE_VERSION.h</itemPath>
       <itemPath>../../ETM_LIBRARY/inc/ETM.h</itemPath>
-      <itemPath>../../ETM_LIBRARY/inc/ETM_IO_PORTS.h</itemPath>
-      <itemPath>../../ETM_LIBRARY/inc/ETM_SCALE.h</itemPath>
-      <itemPath>../../ETM_LIBRARY/inc/ETM_SPI.h</itemPath>
-      <itemPath>../../ETM_LIBRARY/inc/LTC265X.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -47,40 +43,8 @@
       <compileType>
         <linkerTool>
           <linkerLibItems>
-            <linkerLibProjectItem>
-              <makeArtifact PL="../../ETM_LIBRARY/ETM_LIBRARY.X"
-                            CT="3"
-                            CN="default"
-                            AC="true"
-                            BL="true"
-                            WD="../../ETM_LIBRARY/ETM_LIBRARY.X"
-                            BC="${MAKE}  -f Makefile CONF=default"
-                            DBC="${MAKE}  -f Makefile CONF=default TYPE_IMAGE=DEBUG_RUN"
-                            CC="rm -rf &quot;build/default&quot; &quot;dist/default&quot;"
-                            OP="dist/default/production/ETM_LIBRARY.X.a"
-                            DOP="dist/default/debug/ETM_LIBRARY.X.a"
-                            FL="dist/default/production/ETM_LIBRARY.X.a"
-                            PD="dist/default/production/ETM_LIBRARY.X.a"
-                            DD="dist/default/debug/ETM_LIBRARY.X.a">
-              </makeArtifact>
-            </linkerLibProjectItem>
-            <linkerLibProjectItem>
-              <makeArtifact PL="../../ETM_LIBRARY/ETM_EEPROM_INTERNAL.X"
-                            CT="3"
-                            CN="default"
-                            AC="true"
-                            BL="true"
-                            WD="../../ETM_LIBRARY/ETM_EEPROM_INTERNAL.X"
-                            BC="${MAKE}  -f Makefile CONF=default"
-                            DBC="${MAKE}  -f Makefile CONF=default TYPE_IMAGE=DEBUG_RUN"
-                            CC="rm -rf &quot;build/default&quot; &quot;dist/default&quot;"
-                            OP="dist/default/production/ETM_EEPROM_INTERNAL.X.a"
-                            DOP="dist/default/debug/ETM_EEPROM_INTERNAL.X.a"
-                            FL="dist/default/production/ETM_EEPROM_INTERNAL.X.a"
-                            PD="dist/default/production/ETM_EEPROM_INTERNAL.X.a"
-                            DD="dist/default/debug/ETM_EEPROM_INTERNAL.X.a">
-              </makeArtifact>
-            </linkerLibProjectItem>
+            <linkerLibFileItem>../../ETM_LIBRARY/lib/ETM_EEPROM_INTERNAL_0x0010.a</linkerLibFileItem>
+            <linkerLibFileItem>../../ETM_LIBRARY/lib/ETM_LIBRARY_0x0010.a</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
         <archiverTool>
