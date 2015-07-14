@@ -29,6 +29,7 @@ const unsigned int TopReferenceVoltageTable[4096]  = {TOP_VOLTAGE_TABLE_VALUES};
 void DoStateMachine(void);
 void InitializeA36744(void);
 int CheckHeaterFlt (void);
+void CheckAndUpdateShortHeat(void);
 
 ControlData global_data_A36744;
 LTC265X U2_LTC2654;
@@ -73,57 +74,52 @@ void DoStateMachine(void) {
     global_data_A36744.control_state = STATE_WARMUP;
     break;
 	
-  case STATE_WARMUP:;
-    unsigned int flash_LED_timer =10;
-	PIN_STANDBY = 1;
+  case STATE_WARMUP:
+        PIN_STANDBY = 1;
 	PIN_HTR_ENABLE_NOT = 0;
-        global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
+        unsigned int flash_LED_timer =10;
+	global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
 	while (global_data_A36744.heater_warmup_timer > 0)
 	{
             PIN_LED_A_RED = 0;
-		global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
-		global_data_A36744.heater_dac_setting_scaled <<=4;
-                WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
+            global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
+            global_data_A36744.heater_dac_setting_scaled <<=4;
+            WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
 
-		if (_T3IF == 1)
+            if (_T3IF == 1)
 		{
-			_T3IF = 0;
-			global_data_A36744.heater_warmup_timer--;
-			flash_LED_timer--;
+                    _T3IF = 0;
+                    global_data_A36744.heater_warmup_timer--;
+                    flash_LED_timer--;
 		}
-		if (flash_LED_timer==0)
+		
+            if (flash_LED_timer==0) //change state of heater LED every 0.5 sec
 		{
-			flash_LED_timer = 50;
-			PIN_HTR_LED =! PIN_HTR_LED;
+                    flash_LED_timer = 50;
+                    if (PIN_HTR_LED==0)
+                        PIN_HTR_LED = 1;
+                    else
+                        PIN_HTR_LED = 0;
 		}
-		if (PIN_SHORT_HEAT == 1 && global_data_A36744.heater_set_voltage != HEATER_FAST_WARMUP_VOLTAGE)
-		{
-			global_data_A36744.heater_set_voltage = HEATER_FAST_WARMUP_VOLTAGE;
-			
-			if (global_data_A36744.heater_warmup_timer > HTR_WARMUP_SHORT_DURATION)
-				global_data_A36744.heater_warmup_timer = HTR_WARMUP_SHORT_DURATION;
-		}		
-		if (global_data_A36744.heater_warmup_timer <= HV_ON_DELAY)
+            CheckAndUpdateShortHeat();
+             
+            if (global_data_A36744.heater_warmup_timer <= HV_ON_DELAY)
                 {
                     PIN_PIC_HV_ON = 1 ;
                 }
-		if (_INT1IF == 1) {
-			global_data_A36744.control_state = STATE_SHUTDOWN;
+		
+            if (_INT1IF == 1)
+                {
+                    global_data_A36744.control_state = STATE_SHUTDOWN;
 		}
-		if (CheckHeaterFlt())
-			PIN_HTR_LED = 1;
-		else
-			PIN_HTR_LED = 0;
-	if (_INT1IF == 1)
-	{
-		global_data_A36744.control_state = STATE_SHUTDOWN;
+
 	}
-	}
-    global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
-	global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
-	global_data_A36744.heater_dac_setting_scaled <<=4;
+        global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
+        global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
+        global_data_A36744.heater_dac_setting_scaled <<=4;
         WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
-	global_data_A36744.heater_warmup_timer = HTR_WARMUP_DEFAULT_DURATION;
+        PIN_HTR_LED = 1;
+        global_data_A36744.heater_warmup_timer = HTR_WARMUP_DEFAULT_DURATION;
 	PIN_LED_A_RED = 1;
         PIN_STANDBY = 0;
 	PIN_ETM_RESET_DETECT = 1;
@@ -154,7 +150,7 @@ void DoStateMachine(void) {
   
 	_T3IF = 0;
 	_INT4IF = 0;
-	_INT0IE = 1;
+	_INT2IE = 0;
     while (global_data_A36744.control_state == STATE_READY) {
 		
 		if (_INT4IF == 1) // keep heater at its default values as long as pulses are coming in.
@@ -178,9 +174,9 @@ void DoStateMachine(void) {
 		global_data_A36744.heater_dac_setting_scaled <<=4;
                 WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
 	  
-	  if (_INT0IF == 1)
+	  if (_INT2IF == 1)
 	  {
-		  _INT0IF = 0;
+		  _INT2IF = 0;
 		  global_data_A36744.arc_counter++;
 	  }
 	  if (global_data_A36744.arc_timer >= ARC_FLT_WINDOW_MAX)
@@ -200,17 +196,14 @@ void DoStateMachine(void) {
                 _T3IF = 1;
                 while (_T3IF == 0);
 		PIN_PIC_ARC_FLT_NOT = 1;
-		_INT0IF = 0;
+		_INT2IF = 0;
 	  }
 	  
 	if (_INT1IF == 1) 
 	{
 		global_data_A36744.control_state = STATE_SHUTDOWN;
 	}
-	if (CheckHeaterFlt())
-		PIN_HTR_LED = 1;
-	else
-		PIN_HTR_LED = 0; 
+	 
     }
     break;
      
@@ -230,7 +223,11 @@ void DoStateMachine(void) {
         }
 
 	PIN_GRID_ENABLE = 0;
-	
+	if (CheckHeaterFlt())
+		PIN_HTR_LED = 0;
+	else
+		PIN_HTR_LED = 1;
+
 	while (global_data_A36744.control_state == STATE_SHUTDOWN) {
      	 if (_INT1IF == 1)
 		{
@@ -247,9 +244,9 @@ void DoStateMachine(void) {
 		 _INT1IE = 1;
 		}
 		if (CheckHeaterFlt())
-			PIN_HTR_LED = 1;
-		else
 			PIN_HTR_LED = 0;
+		else
+			PIN_HTR_LED = 1;
 	 }
 	break;
 	
@@ -279,25 +276,18 @@ void InitializeA36744(void) {
   //PIN_ETM_RESET_DETECT
   PIN_OVERLOAD = 0;
   PIN_PIC_ERROR = 0;
-  PIN_HTR_LED = 0;
+  PIN_HTR_LED = 1;
   PIN_PIC_VOLTERRN_NOT = 1;
   //PIN_TEST_POINT_A =0;
   PIN_LED_OPERATIONAL_GREEN = 0;
   PIN_LED_A_RED = 0;
 
 
-  //Timer1 setup
- // PR1 = PR1_SETTING;
- // _T1IF = 0; 		// Clear Timer1 interrupt flag
- // _T1IP = 5; 	// Set Timer1 interrupt priority
- // _T1IE = 1; 		//Enable Timer1 Interrupt
- // T1CON = T1CON_SETTING;
-
   //Timer3 setup
   PR3 = PR3_VALUE_10_MILLISECONDS;
   T3CON = T3CON_VALUE;
   _T3IF = 0;
-  
+  _T3IE = 0;
 
     // Initialize internal ADC
   // ---- Configure the dsPIC ADC Module ------------ //
@@ -315,14 +305,17 @@ void InitializeA36744(void) {
 
   
 // additional interrupt set-up
+  //INT4 pretrans
   _INT4IF = 0;
   _INT4IP = 1;
   _INT4IE = 0;
 
-  _INT0IF = 0;
-  _INT0IP = 4;
-  _INT0IE = 0;
+  //INT2 arc detect
+  _INT2IF = 0;
+  _INT2IP = 4;
+  _INT2IE = 0;
 
+  // INT1 volterrn
   _INT1IF = 0;
   _INT1IP = 5;
   _INT1IE = 0;
@@ -330,9 +323,6 @@ void InitializeA36744(void) {
 
   // Initialize LTC DAC
   SetupLTC265X(&U2_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RG15, _PIN_RC1);
-  //SetupLTC265X(&U2_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RC1, _PIN_RC3);
-
- 
   
 
   global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
@@ -342,6 +332,9 @@ void InitializeA36744(void) {
   global_data_A36744.cathode_resistor_accumulator = 0;
   global_data_A36744.top_resistor_accumulator = 0;
   global_data_A36744.adc_conversion_complete = 0;
+
+  global_data_A36744.heater_backoff_time_counter = HTR_BACKOFF_WINDOW;
+
 }
 
 int CheckHeaterFlt (void) {
@@ -362,6 +355,17 @@ return 1;
        i++;
     }*/
 //    return (PIN_HTR_SUM_FLT && PIN_HTR_OC_FLT && PIN_HTR_UC_FLT);
+}
+
+void CheckAndUpdateShortHeat(void){
+    if (PIN_SHORT_HEAT == 1 && global_data_A36744.heater_set_voltage != HEATER_FAST_WARMUP_VOLTAGE)
+	{
+		global_data_A36744.heater_set_voltage = HEATER_FAST_WARMUP_VOLTAGE;
+		if (global_data_A36744.heater_warmup_timer > HTR_WARMUP_SHORT_DURATION)
+                       {
+                            global_data_A36744.heater_warmup_timer = HTR_WARMUP_SHORT_DURATION;
+                       }
+	}
 }
 
 
