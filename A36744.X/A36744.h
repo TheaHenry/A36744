@@ -89,7 +89,7 @@
 
 #define PIN_PIC_ARC_FLT_NOT         	_LATB10
 #define PIN_HTR_ENABLE_NOT           	_LATD11
-#define PIN_STANDBY			            _LATD0
+#define PIN_STANDBY			_LATD0
 #define PIN_POR				            _LATD2
 #define PIN_PIC_HV_ON				    _LATG0
 #define PIN_GRID_ENABLE				    _LATG3
@@ -102,19 +102,19 @@
 #define PIN_PIC_VOLTERRN_NOT			_LATB13
 
 
-#define PIN_TEST_POINT_A                 _LATB11
+#define PIN_TEST_POINT_A                 _LATB8
 
 
 #define PIN_LED_OPERATIONAL_GREEN        _LATA14
-#define PIN_LED_A_RED                    _LATG8
+#define PIN_LED_A_RED                    _LATB11
 
 
-#define SHORT_RESET_NOT					_RD1
-#define SHORT_HEAT					_RD9
-#define HTR_SUM_FLT					_RC14
-#define HTR_OC_FLT					_RD5
-#define HTR_UC_FLT					_RF5
-#define PRETRANS					_RD8
+#define PIN_SHORT_RESET_NOT					_RD1
+#define PIN_SHORT_HEAT					_RD9
+#define PIN_HTR_SUM_FLT					_RC14
+#define PIN_HTR_OC_FLT					_RD5
+#define PIN_HTR_UC_FLT					_RF5
+#define PIN_PRETRANS					_RD8
 
 
 // ---------------- Timing Configuration Values ------------- //
@@ -133,8 +133,8 @@
 #define HEATER_BACKOFF_VOLTAGE			6150		//mV
 #define ARCS_REPEATED					3 
 
-#define HEATER_FIXED_SCALE		0.6176
-#define HEATER_FIXED_OFFSET		-1// should be -1.1714
+#define HEATER_FIXED_SCALE		0.5
+#define HEATER_FIXED_OFFSET		0
 #define TOP_FIXED_SCALE                 14.927
 #define TOP_FIXED_OFFSET		1// should be 1.295
 #define CATHODE_FIXED_SCALE		0.4
