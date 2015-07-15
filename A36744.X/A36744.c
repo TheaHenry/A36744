@@ -39,11 +39,8 @@ LTC265X U2_LTC2654;
 
 int main(void) {
   global_data_A36744.control_state = STATE_STARTUP;
-  _TRISA14 = 0;
   while (1) {
-    //DoStateMachine();
-      PIN_LED_OPERATIONAL_GREEN = !PIN_LED_OPERATIONAL_GREEN;
-      __delay32(1000000);
+    DoStateMachine();
   }
 }
 
@@ -84,7 +81,7 @@ void DoStateMachine(void) {
 	PIN_HTR_ENABLE_NOT = 0;
         unsigned int flash_LED_timer =10;
 	global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
-	while (global_data_A36744.heater_warmup_timer > 0)
+	while (global_data_A36744.heater_warmup_timer > 0 && global_data_A36744.control_state == STATE_WARMUP)
 	{
             PIN_LED_A_RED = 0;
             global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
@@ -110,7 +107,7 @@ void DoStateMachine(void) {
              
             if (global_data_A36744.heater_warmup_timer <= HV_ON_DELAY)
                 {
-                    PIN_PIC_HV_ON = 1 ;
+                    PIN_PIC_HV_ON = 0 ;
                 }
 		
             if (_INT1IF == 1)
@@ -126,7 +123,7 @@ void DoStateMachine(void) {
         PIN_HTR_LED = 1;
         global_data_A36744.heater_warmup_timer = HTR_WARMUP_DEFAULT_DURATION;
 	PIN_LED_A_RED = 1;
-        PIN_STANDBY = 0;
+        
 	PIN_ETM_RESET_DETECT = 1;
 	global_data_A36744.control_state = STATE_READY;
     break;
@@ -153,7 +150,8 @@ void DoStateMachine(void) {
 		to detect a rising edge. The only way to get out of the SHUTDOWN state is by Volterrn going hi.
   ****************************************************************************************************/
   
-	_T3IF = 0;
+	PIN_STANDBY = 0;
+        _T3IF = 0;
 	_INT4IF = 0;
 	_INT2IE = 0;
     while (global_data_A36744.control_state == STATE_READY) {
@@ -214,14 +212,15 @@ void DoStateMachine(void) {
      
     
  case STATE_SHUTDOWN:
+        PIN_STANDBY = 1;
 	_INT1IE = 0;
 	_INT1EP = 0; //change interrupt to detect rising edge (removal of the volterrn condition)
 	_INT1IF = 0;
 
-	PIN_PIC_HV_ON = 0;
+	PIN_PIC_HV_ON = 1;
 	PIN_HTR_ENABLE_NOT = 1;
         unsigned int i;
-        for (i=200; i<=0; i--)
+        for (i=500; i<=0; i--)
         {
             while (_T3IF == 0);
             _T3IF = 0;
@@ -237,16 +236,17 @@ void DoStateMachine(void) {
      	 if (_INT1IF == 1)
 		{
 		 PIN_GRID_ENABLE = 1;
-		 for (i=100; i<=0; i--)
+		 for (i=500; i<=0; i--)
                  {
                     while (_T3IF == 0);
                      _T3IF = 0;
                  }
 		 global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
 		 global_data_A36744.control_state = STATE_WARMUP;
+                 global_data_A36744.heater_warmup_timer = HTR_WARMUP_DEFAULT_DURATION;
 		 _INT1EP = 1 ;
 		 _INT1IF = 0;
-		 _INT1IE = 1;
+		 //_INT1IE = 1;
 		}
 		if (CheckHeaterFlt())
 			PIN_HTR_LED = 0;
@@ -264,12 +264,7 @@ void DoStateMachine(void) {
 
 void InitializeA36744(void) {
 
-  TRISA = A36744_TRISA_VALUE;
-  TRISB = A36744_TRISB_VALUE;
-  TRISC = A36744_TRISC_VALUE;
-  TRISD = A36744_TRISD_VALUE;
-  TRISF = A36744_TRISF_VALUE;
-  TRISG = A36744_TRISG_VALUE;
+  
 
   PIN_PIC_ARC_FLT_NOT = 1;
   PIN_HTR_ENABLE_NOT = 1;
@@ -340,6 +335,12 @@ void InitializeA36744(void) {
 
   global_data_A36744.heater_backoff_time_counter = HTR_BACKOFF_WINDOW;
 
+  TRISA = A36744_TRISA_VALUE;
+  TRISB = A36744_TRISB_VALUE;
+  TRISC = A36744_TRISC_VALUE;
+  TRISD = A36744_TRISD_VALUE;
+  TRISF = A36744_TRISF_VALUE;
+  TRISG = A36744_TRISG_VALUE;
 }
 
 int CheckHeaterFlt (void) {

@@ -35,6 +35,7 @@
   RA10 - VREF+
   RA12 - Digital Input -  VOLTERRN
   RA13 - INT2 - ARC DETECT
+  RA15 - INT4- PRETRANS
  
   RB0  - ICD - PROGRAM
   RB1  - ICD - PROGRAM
@@ -53,7 +54,6 @@
   RD5 - Digital Input - Heater O/C Flt
   RD6 - Digital Input - Low Line Flt
   RD7 - Digital Input - Iw O/C Flt
-  RD8 - Digital Input - Pretrans
   RD9 - Digital Input - Short heat
   RD10 - Digital Input - Reset
   RD13 - Digital Input - Inverter O/C Flt
@@ -75,7 +75,7 @@
 
 */
 
-#define A36744_TRISA_VALUE 0b0011011011000000 
+#define A36744_TRISA_VALUE 0b1011011011000000 
 #define A36744_TRISB_VALUE 0b0000000010111111 
 #define A36744_TRISC_VALUE 0b0100000000010010 
 #define A36744_TRISD_VALUE 0b1010011111110010
@@ -107,7 +107,7 @@
 #define PIN_HTR_SUM_FLT			_RC14
 #define PIN_HTR_OC_FLT			_RD5
 #define PIN_HTR_UC_FLT			_RF5
-#define PIN_PRETRANS			_RD8
+#define PIN_PRETRANS			_RA15
 
 
 // ---------------- Timing Configuration Values ------------- //
