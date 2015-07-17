@@ -6,7 +6,7 @@
 
 
 _FOSC(ECIO & CSW_FSCM_OFF); 
-_FWDT(WDT_ON & WDTPSA_512 & WDTPSB_8);  // 8 Second watchdog timer 
+_FWDT(WDT_OFF & WDTPSA_512 & WDTPSB_8);  // 8 Second watchdog timer
 _FBORPOR(PWRT_64 & BORV_45 & PBOR_OFF & MCLR_EN);
 _FBS(WR_PROTECT_BOOT_OFF & NO_BOOT_CODE & NO_BOOT_EEPROM & NO_BOOT_RAM);
 _FSS(WR_PROT_SEC_OFF & NO_SEC_CODE & NO_SEC_EEPROM & NO_SEC_RAM);
@@ -54,6 +54,7 @@ void DoStateMachine(void) {
 	if (PIN_SHORT_RESET_NOT == 0) //checking power interrupt duration
 	{
 		global_data_A36744.heater_warmup_timer = HTR_WARMUP_RECOVERY_DURATION;
+                PIN_LED_A_RED = 0;
 	}
 	else
 	{
@@ -79,11 +80,11 @@ void DoStateMachine(void) {
   case STATE_WARMUP:
         PIN_STANDBY = 1;
 	PIN_HTR_ENABLE_NOT = 0;
-        unsigned int flash_LED_timer =10;
+        unsigned int flash_LED_timer =50;
 	global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
 	while (global_data_A36744.heater_warmup_timer > 0 && global_data_A36744.control_state == STATE_WARMUP)
 	{
-            PIN_LED_A_RED = 0;
+            
             global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
             global_data_A36744.heater_dac_setting_scaled <<=4;
             WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_C,global_data_A36744.heater_dac_setting_scaled);
@@ -183,25 +184,29 @@ void DoStateMachine(void) {
 		  _INT2IF = 0;
 		  global_data_A36744.arc_counter++;
 	  }
-	  if (global_data_A36744.arc_timer >= ARC_FLT_WINDOW_MAX)
-	  {
-		  if (global_data_A36744.arc_counter != 0)
-		  {
-			 global_data_A36744.arc_counter--;
-		  }
-		  global_data_A36744.arc_timer = 0;
-	  }
-	  
+                
+          if (global_data_A36744.arc_timer >= ARC_FLT_WINDOW_MAX)
+          {
+               global_data_A36744.arc_counter=0;
+               global_data_A36744.arc_timer = 0;
+          }
+
 	  if (global_data_A36744.arc_counter >= ARCS_REPEATED)
-	  { 
-		global_data_A36744.arc_counter=0;
-                global_data_A36744.arc_timer = 0;
-		PIN_PIC_ARC_FLT_NOT = 0;
-		while (_T3IF == 0);
-                _T3IF = 0;
-                while (_T3IF == 0);
-		PIN_PIC_ARC_FLT_NOT = 1;
-		_INT2IF = 0;
+	  {
+              if (global_data_A36744.arc_timer <= ARC_FLT_WINDOW_MAX)
+              {
+                    PIN_PIC_ARC_FLT_NOT = 0;
+                    while (_T3IF == 0);
+                    _T3IF = 0;
+                    while (_T3IF == 0);
+                    _T3IF = 0;
+                    while (_T3IF == 0);
+                    PIN_PIC_ARC_FLT_NOT = 1;
+                    _INT2IF = 0;
+              }
+              global_data_A36744.arc_counter=0;
+              global_data_A36744.arc_timer = 0;
+
 	  }
 	  
 	if (_INT1IF == 1) 
@@ -282,7 +287,7 @@ void InitializeA36744(void) {
   PIN_PIC_VOLTERRN_NOT = 1;
   //PIN_TEST_POINT_A =0;
   PIN_LED_OPERATIONAL_GREEN = 0;
-  PIN_LED_A_RED = 0;
+  PIN_LED_A_RED = 1;
 
 
   //Timer3 setup

@@ -112,8 +112,8 @@
 
 
 // ---------------- Timing Configuration Values ------------- //
-#define ARC_FLT_WINDOW_MIN	        3000        // repeated arcs within defined time will assert an arc fault
-#define ARC_FLT_WINDOW_MAX	        5000        // repeated arcs within defined time will assert an arc fault
+#define ARC_FLT_WINDOW_MIN	        300        // repeated arcs within defined time will assert an arc fault
+#define ARC_FLT_WINDOW_MAX	        500        // repeated arcs within defined time will assert an arc fault
 #define HTR_BACKOFF_WINDOW      	5400          // Duration with no pulse to start heater backoff
 #define HTR_WARMUP_DEFAULT_DURATION     18000           // Default duration for heater timer delay
 #define HV_ON_DELAY             	500      // Time allotted for HV turn on during warmup
