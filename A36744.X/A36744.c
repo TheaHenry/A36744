@@ -49,7 +49,7 @@ void DoStateMachine(void) {
 
   case STATE_STARTUP:
     InitializeA36744();
-	
+    PIN_STANDBY = 1;
     global_data_A36744.heater_warmup_timer = HTR_WARMUP_DEFAULT_DURATION;
 	if (PIN_SHORT_RESET_NOT == 0) //checking power interrupt duration
 	{
@@ -70,7 +70,7 @@ void DoStateMachine(void) {
 
                 WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_B,global_data_A36744.cathode_dac_setting_scaled);
 		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_A,global_data_A36744.top_dac_setting_scaled);
-
+                //PIN_POR   = 1;
 	}
 
     global_data_A36744.control_state = STATE_WARMUP;
@@ -171,7 +171,8 @@ void DoStateMachine(void) {
 			{
 				global_data_A36744.heater_set_voltage = HEATER_BACKOFF_VOLTAGE;
 			}
-			global_data_A36744.arc_timer++;			
+                        if (global_data_A36744.arc_counter != 0)
+                            global_data_A36744.arc_timer++;	
 		}
 		global_data_A36744.heater_dac_setting_scaled = ETMScaleFactor16(global_data_A36744.heater_set_voltage,MACRO_DEC_TO_SCALE_FACTOR_16(HEATER_FIXED_SCALE),HEATER_FIXED_OFFSET);
 		global_data_A36744.heater_dac_setting_scaled <<=4;
@@ -194,9 +195,10 @@ void DoStateMachine(void) {
 	  if (global_data_A36744.arc_counter >= ARCS_REPEATED)
 	  { 
 		global_data_A36744.arc_counter=0;
+                global_data_A36744.arc_timer = 0;
 		PIN_PIC_ARC_FLT_NOT = 0;
 		while (_T3IF == 0);
-                _T3IF = 1;
+                _T3IF = 0;
                 while (_T3IF == 0);
 		PIN_PIC_ARC_FLT_NOT = 1;
 		_INT2IF = 0;
@@ -270,8 +272,8 @@ void InitializeA36744(void) {
   PIN_HTR_ENABLE_NOT = 1;
 
   PIN_STANDBY   = 0;
-  PIN_POR   = 0;
-  PIN_PIC_HV_ON   = 0;
+  //PIN_POR   = 0;
+  PIN_PIC_HV_ON   = 1;
   PIN_GRID_ENABLE   = 1;
   //PIN_ETM_RESET_DETECT
   PIN_OVERLOAD = 0;

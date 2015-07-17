@@ -50,6 +50,7 @@
   RC14 - Digital Input - Heater Sum Flt
   
   RD1 - Digital Input - Short reset (short power cycle)
+  RD2 - Digital Output - Power on reset (PIN_POR)
   RD4 - Digital Input - Temp SW Flt
   RD5 - Digital Input - Heater O/C Flt
   RD6 - Digital Input - Low Line Flt
@@ -78,7 +79,7 @@
 #define A36744_TRISA_VALUE 0b1011011011000000 
 #define A36744_TRISB_VALUE 0b0000000010111111 
 #define A36744_TRISC_VALUE 0b0100000000010010 
-#define A36744_TRISD_VALUE 0b1010011111110010
+#define A36744_TRISD_VALUE 0b1010011111110110
 #define A36744_TRISF_VALUE 0b0000000111111100 
 #define A36744_TRISG_VALUE 0b1000001111000000
 
