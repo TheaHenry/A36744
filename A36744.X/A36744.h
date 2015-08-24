@@ -109,6 +109,7 @@
 #define PIN_HTR_OC_FLT			_RD5
 #define PIN_HTR_UC_FLT			_RF5
 #define PIN_PRETRANS			_RA15
+#define PIN_IN_VOLTERRN_NOT		_RA12
 
 
 // ---------------- Timing Configuration Values ------------- //

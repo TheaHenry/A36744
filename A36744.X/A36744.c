@@ -1,5 +1,4 @@
 #include "A36744.h"
-#include "FIRMWARE_VERSION.h"
 
 
 // This is the firmware for Interface Board
@@ -71,6 +70,7 @@ void DoStateMachine(void) {
 
                 WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_B,global_data_A36744.cathode_dac_setting_scaled);
 		WriteLTC265X (&U2_LTC2654, LTC265X_WRITE_AND_UPDATE_DAC_A,global_data_A36744.top_dac_setting_scaled);
+
                 //PIN_POR   = 1;
 	}
 
@@ -111,7 +111,7 @@ void DoStateMachine(void) {
                     PIN_PIC_HV_ON = 0 ;
                 }
 		
-            if (_INT1IF == 1)
+            if (PIN_IN_VOLTERRN_NOT == 0)
                 {
                     global_data_A36744.control_state = STATE_SHUTDOWN;
 		}
@@ -209,7 +209,7 @@ void DoStateMachine(void) {
 
 	  }
 	  
-	if (_INT1IF == 1) 
+	if (PIN_IN_VOLTERRN_NOT == 0)
 	{
 		global_data_A36744.control_state = STATE_SHUTDOWN;
 	}
@@ -220,9 +220,9 @@ void DoStateMachine(void) {
     
  case STATE_SHUTDOWN:
         PIN_STANDBY = 1;
-	_INT1IE = 0;
-	_INT1EP = 0; //change interrupt to detect rising edge (removal of the volterrn condition)
-	_INT1IF = 0;
+	//_INT1IE = 0;
+	//_INT1EP = 0; //change interrupt to detect rising edge (removal of the volterrn condition)
+	//_INT1IF = 0;
 
 	PIN_PIC_HV_ON = 1;
 	PIN_HTR_ENABLE_NOT = 1;
@@ -240,7 +240,7 @@ void DoStateMachine(void) {
 		PIN_HTR_LED = 1;
 
 	while (global_data_A36744.control_state == STATE_SHUTDOWN) {
-     	 if (_INT1IF == 1)
+     	 if (PIN_IN_VOLTERRN_NOT == 1)
 		{
 		 PIN_GRID_ENABLE = 1;
 		 for (i=500; i<=0; i--)
@@ -249,10 +249,10 @@ void DoStateMachine(void) {
                      _T3IF = 0;
                  }
 		 global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
-		 global_data_A36744.control_state = STATE_WARMUP;
+		 global_data_A36744.control_state = STATE_STARTUP;
                  global_data_A36744.heater_warmup_timer = HTR_WARMUP_DEFAULT_DURATION;
-		 _INT1EP = 1 ;
-		 _INT1IF = 0;
+		 //_INT1EP = 1 ;
+		 //_INT1IF = 0;
 		 //_INT1IE = 1;
 		}
 		if (CheckHeaterFlt())
@@ -323,10 +323,10 @@ void InitializeA36744(void) {
   _INT2IE = 0;
 
   // INT1 volterrn
-  _INT1IF = 0;
-  _INT1IP = 5;
-  _INT1IE = 0;
-  _INT1EP = 1;
+ // _INT1IF = 0;
+ // _INT1IP = 5;
+ // _INT1IE = 0;
+ // _INT1EP = 1;
 
   // Initialize LTC DAC
   SetupLTC265X(&U2_LTC2654, ETM_SPI_PORT_1, FCY_CLK, LTC265X_SPI_2_5_M_BIT, _PIN_RG15, _PIN_RC1);

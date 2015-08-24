@@ -5,7 +5,6 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>A36744.h</itemPath>
-      <itemPath>FIRMWARE_VERSION.h</itemPath>
       <itemPath>../../ETM_LIBRARY/inc/ETM.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
