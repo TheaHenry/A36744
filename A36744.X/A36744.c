@@ -155,9 +155,10 @@ void DoStateMachine(void) {
         _T3IF = 0;
 	_INT4IF = 0;
 	_INT2IE = 0;
+        global_data_A36744.heater_set_voltage = HEATER_BACKOFF_VOLTAGE;
     while (global_data_A36744.control_state == STATE_READY) {
 		
-		if (_INT4IF == 1) // keep heater at its default values as long as pulses are coming in.
+		if (_INT4IF == 1) // keep heater at its default value as long as pulses are coming in.
 		{
 			_INT4IF = 0;
 			global_data_A36744.heater_backoff_time_counter = HTR_BACKOFF_WINDOW;
@@ -289,7 +290,13 @@ void InitializeA36744(void) {
   PIN_LED_OPERATIONAL_GREEN = 0;
   PIN_LED_A_RED = 1;
 
-
+  TRISA = A36744_TRISA_VALUE;
+  TRISB = A36744_TRISB_VALUE;
+  TRISC = A36744_TRISC_VALUE;
+  TRISD = A36744_TRISD_VALUE;
+  TRISF = A36744_TRISF_VALUE;
+  TRISG = A36744_TRISG_VALUE;
+  
   //Timer3 setup
   PR3 = PR3_VALUE_10_MILLISECONDS;
   T3CON = T3CON_VALUE;
@@ -342,12 +349,7 @@ void InitializeA36744(void) {
 
   global_data_A36744.heater_backoff_time_counter = HTR_BACKOFF_WINDOW;
 
-  TRISA = A36744_TRISA_VALUE;
-  TRISB = A36744_TRISB_VALUE;
-  TRISC = A36744_TRISC_VALUE;
-  TRISD = A36744_TRISD_VALUE;
-  TRISF = A36744_TRISF_VALUE;
-  TRISG = A36744_TRISG_VALUE;
+
 }
 
 int CheckHeaterFlt (void) {
@@ -379,6 +381,12 @@ void CheckAndUpdateShortHeat(void){
                             global_data_A36744.heater_warmup_timer = HTR_WARMUP_SHORT_DURATION;
                        }
 	}
+    if (PIN_SHORT_HEAT == 0 && global_data_A36744.heater_set_voltage == HEATER_FAST_WARMUP_VOLTAGE) //Catch a transition from short warmup to default warmup- input changed, but warmup conditions haven't been updated.
+    {
+        global_data_A36744.heater_set_voltage = HEATER_DEFAULT_VOLTAGE;
+        global_data_A36744.heater_warmup_timer += HTR_WARMUP_SHORT_DURATION_DIFFERENCE; // add time to heater warmup (difference between short warm up and default
+    }
+
 }
 
 

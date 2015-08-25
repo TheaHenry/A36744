@@ -72,7 +72,6 @@
   RG7 - Digital Input - PS over temp Flt
   RG8 - Digital Input - Grid O/V Flt
   RG9 - Digital Input - Over Duty Flt
-  RG15  - DAC CS/LD (Configured by DAC module)
 
 */
 
@@ -81,7 +80,7 @@
 #define A36744_TRISC_VALUE 0b0100000000010010 
 #define A36744_TRISD_VALUE 0b1010011111110110
 #define A36744_TRISF_VALUE 0b0000000111111100 
-#define A36744_TRISG_VALUE 0b1000001111000000
+#define A36744_TRISG_VALUE 0b0000001111000000
 
 
 // ------------- PIN DEFINITIONS ------------------- ///
@@ -115,10 +114,11 @@
 // ---------------- Timing Configuration Values ------------- //
 #define ARC_FLT_WINDOW_MIN	        300        // repeated arcs within defined time will assert an arc fault
 #define ARC_FLT_WINDOW_MAX	        500        // repeated arcs within defined time will assert an arc fault
-#define HTR_BACKOFF_WINDOW      	5400          // Duration with no pulse to start heater backoff
+#define HTR_BACKOFF_WINDOW      	4500          // Duration with no pulse to start heater backoff
 #define HTR_WARMUP_DEFAULT_DURATION     18000           // Default duration for heater timer delay
 #define HV_ON_DELAY             	500      // Time allotted for HV turn on during warmup
 #define HTR_WARMUP_SHORT_DURATION     	6000           // Fast warmup duration in secs for heater timer delay
+#define HTR_WARMUP_SHORT_DURATION_DIFFERENCE (HTR_WARMUP_DEFAULT_DURATION-HTR_WARMUP_SHORT_DURATION)
 #define HTR_WARMUP_RECOVERY_DURATION	1000
 
 
