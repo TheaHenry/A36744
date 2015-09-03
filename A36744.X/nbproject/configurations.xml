@@ -42,8 +42,8 @@
       <compileType>
         <linkerTool>
           <linkerLibItems>
-            <linkerLibFileItem>../../ETM_LIBRARY/lib/ETM_EEPROM_INTERNAL_0x0010.a</linkerLibFileItem>
-            <linkerLibFileItem>../../ETM_LIBRARY/lib/ETM_LIBRARY_0x0010.a</linkerLibFileItem>
+            <linkerLibFileItem>../../91-36994 Rev 1/Version_01/lib/ETM_CORE.a</linkerLibFileItem>
+            <linkerLibFileItem>../../91-36994 Rev 1/Version_01/lib/ETM_EEPROM_INTERNAL.a</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
         <archiverTool>
