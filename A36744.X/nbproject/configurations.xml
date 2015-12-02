@@ -5,7 +5,7 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>A36744.h</itemPath>
-      <itemPath>../../ETM_LIBRARY/inc/ETM.h</itemPath>
+      <itemPath>../../91-36994/Version_01/inc/ETM.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -25,6 +25,7 @@
   <sourceRootList>
     <Elem>../../ETM_LIBRARY/inc</Elem>
     <Elem>../../../../../../Program Files (x86)/Microchip/xc16/v1.24/examples/dsPIC30F/CE006_address_error_trap/src</Elem>
+    <Elem>../../91-36994/Version_01/inc</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -42,8 +43,7 @@
       <compileType>
         <linkerTool>
           <linkerLibItems>
-            <linkerLibFileItem>../../91-36994 Rev 1/Version_01/lib/ETM_CORE.a</linkerLibFileItem>
-            <linkerLibFileItem>../../91-36994 Rev 1/Version_01/lib/ETM_EEPROM_INTERNAL.a</linkerLibFileItem>
+            <linkerLibFileItem>../../91-36994/Version_01/lib/ETM_CORE.a</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
         <archiverTool>
@@ -170,7 +170,8 @@
         <property key="warn-section-align" value="false"/>
       </C30-LD>
       <C30Global>
-        <property key="common-include-directories" value="..\..\ETM_LIBRARY\inc\"/>
+        <property key="common-include-directories"
+                  value="..\..\91-36994\Version_01\inc"/>
         <property key="dual-boot-partition" value="0"/>
         <property key="fast-math" value="false"/>
         <property key="generic-16-bit" value="false"/>
@@ -215,7 +216,6 @@
         <property key="UART 1" value="true"/>
         <property key="UART 2" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="false"/>

@@ -4,6 +4,7 @@
 
 
 #define FCY_CLK 10000000
+#define FCY     FCY_CLK
 
 #include <xc.h>
 #include <libpic30.h>
