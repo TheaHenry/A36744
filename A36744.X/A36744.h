@@ -44,6 +44,7 @@
   RB3  - Analog Input - Ek Resistor Sense
   RB4  - Analog Input - Top Resistor Sense
   RB5 - Digital Input - Over PW Flt
+  RB6 - Digital Input - Override
   RB7 - Analog Input - ETM ADC +15V monitor
 
   RC1  - DAC LDAC  (Configured by DAC module)
@@ -77,7 +78,7 @@
 */
 
 #define A36744_TRISA_VALUE 0b1011011011000000 
-#define A36744_TRISB_VALUE 0b0000000010111111 
+#define A36744_TRISB_VALUE 0b0000000011111111
 #define A36744_TRISC_VALUE 0b0100000000010010 
 #define A36744_TRISD_VALUE 0b1010011111110110
 #define A36744_TRISF_VALUE 0b0000000111111100 
@@ -107,10 +108,19 @@
 #define PIN_SHORT_HEAT			_RD9
 #define PIN_HTR_SUM_FLT			_RC14
 #define PIN_HTR_OC_FLT			_RD5
+#define PIN_GRID_UV_FLT_NOT             _RD15
 #define PIN_HTR_UC_FLT			_RF5
+#define PIN_EK_UV_FLT                   _RB2
+#define PIN_RESET_NOT     _RD10
 #define PIN_PRETRANS			_RA15
 #define PIN_IN_VOLTERRN_NOT		_RA12
-
+#define PIN_TWT_OVER_TEMP_FLT_NOT   _RG6
+#define PIN_PS_OVER_TEMP_FLT_NOT    _RG7
+#define PIN_OV_DUTY_FLT             _RG9
+#define PIN_OV_PW_FLT               _RB5
+#define PIN_COL_UV_FLT              _RA7
+#define PIN_HV_ON_SENSE             _RC4
+#define PIN_OVERRIDE_NOT            _RB6
 
 // ---------------- Timing Configuration Values ------------- //
 #define ARC_FLT_WINDOW_MIN	        300        // repeated arcs within defined time will assert an arc fault

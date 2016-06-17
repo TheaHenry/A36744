@@ -5,7 +5,6 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>A36744.h</itemPath>
-      <itemPath>../../91-36994/Version_01/inc/ETM.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -23,9 +22,8 @@
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
-    <Elem>../../ETM_LIBRARY/inc</Elem>
     <Elem>../../../../../../Program Files (x86)/Microchip/xc16/v1.24/examples/dsPIC30F/CE006_address_error_trap/src</Elem>
-    <Elem>../../91-36994/Version_01/inc</Elem>
+    <Elem>../../91-36994/Version_02</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -43,7 +41,7 @@
       <compileType>
         <linkerTool>
           <linkerLibItems>
-            <linkerLibFileItem>../../91-36994/Version_01/lib/ETM_CORE.a</linkerLibFileItem>
+            <linkerLibFileItem>../../91-36994/Version_02/lib/ETM_CORE_30F6014A.a</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
         <archiverTool>
